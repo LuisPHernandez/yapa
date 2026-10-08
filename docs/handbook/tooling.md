@@ -4,34 +4,14 @@ Every tool, config file, and convention added to the project is listed here, wit
 
 For how to actually make a change day to day, see [workflow.md](workflow.md).
 
-## Status
-
-| Tool | Status | Section |
-| --- | --- | --- |
-| Git conventions (`.gitignore`, `.gitattributes`) | Done | [Git](#git) |
-| GitHub pull requests + protected `main` | PR template done; ruleset is manual setup in GitHub | [GitHub](#github) |
-| Decision records | Done | [Decision records](#decision-records) |
-| GitHub Issues + Projects board | Manual setup | [GitHub](#github) |
-| uv | Planned | |
-| Docker Compose (PostGIS + Redis) | Planned | |
-| Environment variables (`django-environ`) | Planned | |
-| Ruff + pre-commit | Planned | |
-| pytest + pytest-django + factory_boy | Planned | |
-| mypy + django-stubs | Planned | |
-| GitHub Actions | Planned | |
-| Dependabot | Planned | |
-| Flutter lints + `dart format` | Planned, with the Flutter project | |
-| OpenAPI breaking-change check | Planned, once endpoints exist | |
-| Sentry | Planned, at the first staging deploy | |
-
 ## Repository layout
 
 ```
-.github/          GitHub configuration (PR template; CI workflows later)
+.github/          GitHub configuration (PR template)
 backend/          Django project
 docs/decisions/   One file per important decision
 docs/handbook/    This file and workflow.md
-docs/ideas/       Notes and plans that are not decisions yet
+docs/ideas/       Temporary notes and plans; files here come and go
 ```
 
 ## Git
@@ -67,7 +47,6 @@ This is enforced by a ruleset on GitHub (Settings → Rules → Rulesets), not b
 | Require a pull request before merging, 1 approval | No direct pushes; the other person must approve |
 | Dismiss stale approvals when new commits are pushed | An approval covers only the code that was reviewed |
 | Require conversation resolution | Every review comment is answered before merge |
-| Require status checks to pass | Added when GitHub Actions exists |
 
 Repository settings that go with it (Settings → General → Pull Requests):
 
@@ -77,7 +56,7 @@ Repository settings that go with it (Settings → General → Pull Requests):
 
 ### PR template
 
-`.github/pull_request_template.md` pre-fills the description of every new PR with three prompts: what and why, how it was tested, and a short checklist. It grows as tools arrive (for example, an item for the regenerated OpenAPI file once the API exists).
+`.github/pull_request_template.md` pre-fills the description of every new PR with three prompts: what and why, how it was tested, and a short checklist.
 
 ### Issues and Projects
 
