@@ -16,7 +16,7 @@ git push -u origin feat/drop-pickup-window  # 3. push
 # 5. squash and merge, then:
 git switch main
 git pull
-git branch -d feat/drop-pickup-window
+git branch -D feat/drop-pickup-window
 ```
 
 ## 1. Start from an issue and a fresh branch
@@ -37,6 +37,13 @@ Branch names are `type/short-description`:
 
 Commit whenever something works. Commit messages on a branch don't need polish, because the branch is squashed into one commit when it merges.
 
+Stage only what belongs to the change. `git add .` takes everything, including files you did not mean to commit; name the paths instead and check with `git status` before committing:
+
+```bash
+git add backend/orders docs/handbook
+git status
+```
+
 Keep the branch short-lived: aim to open the PR within a day or two. A branch that lives for a week drifts away from `main` and becomes painful to review and merge.
 
 If `main` moved while you were working, bring it in:
@@ -50,9 +57,10 @@ git merge origin/main
 
 Push the branch and open a PR against `main`. Fill in the template:
 
-- **Title:** this becomes the commit message on `main`, so write it as one: `Add pickup window validation to drops`.
+- **Title:** this becomes the commit message on `main`, so write it as one: `Add pickup window validation to drops`. GitHub pre-fills it from the commit message or branch name; it can be edited any time before merging, and is shown once more for confirmation when you squash and merge.
 - **What and why:** include `Closes #12` so the issue closes on merge.
 - **How I tested it.**
+- **Checklist:** the author ticks the boxes by clicking them once the PR is created. Delete an item that does not apply, so an unticked box always means "not done yet".
 
 Open the PR as a **draft** if you want early feedback on something unfinished.
 
@@ -80,8 +88,10 @@ Once approved (and, later, once CI is green), the author clicks **Squash and mer
 ```bash
 git switch main
 git pull
-git branch -d feat/drop-pickup-window
+git branch -D feat/drop-pickup-window
 ```
+
+`-D` is needed because a squash merge creates a new commit, so Git cannot tell that the local branch was merged and `-d` refuses to delete it.
 
 ## When something goes wrong
 

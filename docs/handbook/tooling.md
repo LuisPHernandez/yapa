@@ -71,8 +71,9 @@ This is enforced by a ruleset on GitHub (Settings → Rules → Rulesets), not b
 
 Repository settings that go with it (Settings → General → Pull Requests):
 
-- **Allow squash merging only.** Each PR becomes one commit on `main`, so history reads as a list of changes rather than a list of work-in-progress commits, and reverting a change is reverting one commit.
+- **Allow squash merging only, with "Pull request title" as the default commit message.** Each PR becomes one commit on `main`, named after the PR, so history reads as a list of changes rather than a list of work-in-progress commits, and reverting a change is reverting one commit.
 - **Automatically delete head branches.** Merged branches are removed from GitHub.
+- **Collaborators** (Settings → Collaborators) must be added before the ruleset is activated, or nobody can give the required approval.
 
 ### PR template
 
