@@ -28,7 +28,8 @@ The codebase is meant to be production-ready from the start: the first release i
 
 | Area | Choice |
 | --- | --- |
-| Backend | Django + Django REST Framework + GeoDjango, as a modular monolith. No microservices, no Kubernetes. |
+| Backend | Django 6.1 + Django REST Framework + GeoDjango, as a modular monolith. No microservices, no Kubernetes. |
+| Python tooling | Python 3.13; dependencies managed by uv (`backend/pyproject.toml` + `backend/uv.lock`). The Django project package is `backend/config/`. |
 | Django apps | `accounts`, `stores`, `catalog`, `orders`, `payments`, `payouts`, `invoicing` |
 | Database | PostgreSQL + PostGIS |
 | Mobile | Two Flutter apps (customer app and store app) sharing one backend and one database |
@@ -40,7 +41,7 @@ The codebase is meant to be production-ready from the start: the first release i
 
 ```
 .github/          GitHub configuration
-backend/          Django project
+backend/          Django project (uv-managed; settings in backend/config/)
 frontend/         Flutter apps (customer and store)
 docs/decisions/   One file per important decision
 docs/handbook/    What tools exist (tooling.md) and how to make changes (workflow.md)
@@ -117,6 +118,7 @@ Fields still to add to the draft:
 - Payment gateway
 - FEL invoicing provider (FEL is Guatemala's electronic invoicing system)
 - Hosting provider
+- How the backend runs in development: directly on Windows with the database in Docker, fully in Docker, or inside WSL2. GeoDjango needs the native GDAL, GEOS and PROJ libraries, which are awkward to install on Windows.
 - Background job queue (Celery + Redis or Postgres-based)
 - Whether store staff may buy packages from their own store
 
@@ -124,8 +126,9 @@ When one of these is settled, it gets a record in `docs/decisions/` and moves to
 
 ## Working with the team (for AI assistants)
 
-- **Don't change anything on disk without explicit permission.** Propose file contents and commands in the conversation; the developer applies them or explicitly allows you to. Permission covers only the change it was given for.
+- **Don't change code or configuration on disk without explicit permission.** Propose file contents and commands in the conversation; the developer applies them or explicitly allows you to. Permission covers only the change it was given for.
+- **Documentation is the exception: update it yourself.** Whenever something relevant changes, update `README.md` and the files in `docs/` as part of the same step, without being asked. Keep each file coherent and in order, and limited to lasting information: no temporary status notes that will be out of date in a week.
 - **Work in small steps and explain each one.** The developers want to understand every tool and change, not just receive them.
 - **Ask before deviating** from the key decisions above.
-- **Keep the docs current.** A change that adds a tool updates `docs/handbook/tooling.md`. A change to how the team works updates `docs/handbook/workflow.md`. A settled decision gets a record in `docs/decisions/`. A change to anything described here updates this file.
+- **Where each kind of information goes:** a tool that is applied goes in `docs/handbook/tooling.md` (only applied tools, not plans). A change to how the team works goes in `docs/handbook/workflow.md`. A settled decision gets a record in `docs/decisions/`. Progress on the tooling plan is ticked in `docs/ideas/team-tools.md`. Anything described in this file is updated here.
 - **At least one developer works on Windows.** Text files use LF line endings on every machine, enforced by `.gitattributes`.

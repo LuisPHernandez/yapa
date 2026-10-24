@@ -16,7 +16,7 @@ The goal is tooling that catches mistakes automatically and keeps both machines 
 
 ## Python code quality
 
-- [ ] **uv:** modern, very fast package manager with a lockfile, so both developers get exactly the same dependency versions.
+- [x] **uv:** modern, very fast package manager with a lockfile, so both developers get exactly the same dependency versions.
 - [ ] **Ruff:** linter and formatter in one tool (replaces black, isort, flake8). No style debates, no formatting-only diffs.
 - [ ] **mypy + django-stubs:** type checking catches a whole class of bugs before runtime.
 - [ ] **pytest + pytest-django + factory_boy:** tests with easy test-data creation.

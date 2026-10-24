@@ -19,6 +19,16 @@ git pull
 git branch -D feat/drop-pickup-window
 ```
 
+## Setting up a machine
+
+1. Install uv. On Windows: `winget install --id=astral-sh.uv -e`, then reopen the terminal and VS Code.
+2. Install the backend's dependencies:
+   ```bash
+   cd backend
+   uv sync
+   ```
+3. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
+
 ## 1. Start from an issue and a fresh branch
 
 Pick an issue from the board and move it to Doing (create one first if it doesn't exist). Then branch from an up-to-date `main`.
@@ -52,6 +62,14 @@ If `main` moved while you were working, bring it in:
 git fetch origin
 git merge origin/main
 ```
+
+### Dependencies
+
+- After pulling, run `uv sync` in `backend/` so your environment matches `uv.lock`.
+- Add packages with `uv add <package>` (or `uv add --dev <package>` for development-only tools). Never use `pip install`: it changes your environment without updating `pyproject.toml` or `uv.lock`, so nobody else gets the package.
+- Commit `pyproject.toml` and `uv.lock` together.
+- If `uv.lock` conflicts during a merge, resolve `pyproject.toml` by hand, then run `uv lock` to regenerate the lockfile. Never edit `uv.lock` by hand.
+- Run Django commands with `uv run python manage.py <command>`.
 
 ## 3. Open the pull request
 

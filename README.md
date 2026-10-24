@@ -4,6 +4,7 @@ Marketplace for surplus food in Guatemala: businesses publish discounted surpris
 
 ## Documentation
 
+- [docs/handoff/](docs/handoff/): full project context, start here
 - [docs/handbook/tooling.md](docs/handbook/tooling.md): every tool in the project and why it is there
 - [docs/handbook/workflow.md](docs/handbook/workflow.md): how to make a change, from branch to merge
 - [docs/decisions/](docs/decisions/): one record per important decision
