@@ -1,0 +1,149 @@
+# Workflow: how to make a change
+
+The steps for getting a change into `main`. For what each tool is and why we use it, see [tooling.md](tooling.md).
+
+When a new tool changes how we work, its PR updates this file.
+
+## The short version
+
+```bash
+git switch main
+git pull
+git switch -c feat/drop-pickup-window     # 1. branch
+# ...edit, commit, repeat...              # 2. work
+git push -u origin feat/drop-pickup-window  # 3. push
+# 4. open a PR on GitHub, the other person reviews
+# 5. squash and merge, then:
+git switch main
+git pull
+git branch -D feat/drop-pickup-window
+```
+
+## Setting up a machine
+
+1. Install Docker Desktop and uv. On Windows: Docker Desktop from docker.com (it uses WSL2), and `winget install --id=astral-sh.uv -e`. Reopen the terminal and VS Code afterwards.
+2. Start the backend, its database and Redis, from the repository root:
+   ```bash
+   docker compose up --build
+   ```
+   The API is then at http://localhost:8000.
+3. Create the local environment the editor reads (it is never used to run the app):
+   ```bash
+   cd backend
+   uv sync
+   ```
+4. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
+
+## 1. Start from an issue and a fresh branch
+
+Pick an issue from the board and move it to Doing (create one first if it doesn't exist). Then branch from an up-to-date `main`.
+
+Branch names are `type/short-description`:
+
+| Prefix | For |
+| --- | --- |
+| `feat/` | New behaviour |
+| `fix/` | Bug fixes |
+| `chore/` | Tooling, dependencies, configuration |
+| `docs/` | Documentation only |
+| `refactor/` | Restructuring without changing behaviour |
+
+## 2. Work in small commits
+
+Commit whenever something works. Commit messages on a branch don't need polish, because the branch is squashed into one commit when it merges.
+
+Stage only what belongs to the change. `git add .` takes everything, including files you did not mean to commit; name the paths instead and check with `git status` before committing:
+
+```bash
+git add backend/orders docs/handbook
+git status
+```
+
+Keep the branch short-lived: aim to open the PR within a day or two. A branch that lives for a week drifts away from `main` and becomes painful to review and merge.
+
+If `main` moved while you were working, bring it in:
+
+```bash
+git fetch origin
+git merge origin/main
+```
+
+### Dependencies
+
+- After pulling, start with `docker compose up --build` so the image is rebuilt if `uv.lock` changed, and run `uv sync` in `backend/` so the editor's environment matches too.
+- Add packages with `uv add <package>` in `backend/` (or `uv add --dev <package>` for development-only tools), then rebuild with `docker compose up --build` so the container installs it. Never use `pip install`: it changes one environment without updating `pyproject.toml` or `uv.lock`, so nobody else gets the package.
+- Commit `pyproject.toml` and `uv.lock` together.
+- If `uv.lock` conflicts during a merge, resolve `pyproject.toml` by hand, then run `uv lock` to regenerate the lockfile. Never edit `uv.lock` by hand.
+- Run Django commands inside the container, from the repository root, while Compose is running: `docker compose exec backend python manage.py <command>`.
+
+### Docker Compose commands
+
+| Command | What it does |
+| --- | --- |
+| `docker compose up --build` | Build the backend image if needed and start everything, showing the logs |
+| `docker compose up -d` | Start everything in the background |
+| `docker compose logs -f backend` | Follow one service's logs |
+| `docker compose exec backend <command>` | Run a command in the running backend container |
+| `docker compose ps` | List the running services |
+| `docker compose down` | Stop and remove the containers. The database data is kept. |
+| `docker compose down -v` | Same, and delete the database data too |
+
+## 3. Open the pull request
+
+Push the branch and open a PR against `main`. The first push of a new branch has to create it on GitHub and link it to your local one; after that, a plain `git push` is enough:
+
+```bash
+git push -u origin feat/drop-pickup-window
+```
+
+Then fill in the template:
+
+- **Title:** this becomes the commit message on `main`, so write it as one: `Add pickup window validation to drops`. GitHub pre-fills it from the commit message or branch name; it can be edited any time before merging, and is shown once more for confirmation when you squash and merge.
+- **What and why:** include `Closes #12` so the issue closes on merge.
+- **How I tested it.**
+- **Checklist:** the author ticks the boxes by clicking them once the PR is created. Delete an item that does not apply, so an unticked box always means "not done yet".
+
+Open the PR as a **draft** if you want early feedback on something unfinished.
+
+One PR does one thing. If the description needs the word "also", it is probably two PRs.
+
+## 4. Review
+
+The author:
+
+- Reads their own diff on GitHub before asking for review.
+- Answers every comment, by changing the code or by replying.
+
+The reviewer:
+
+- Reviews within one working day. A waiting PR blocks the other person.
+- Checks that they understand what the code does and would be comfortable maintaining it.
+- Says which comments must be fixed and which are suggestions (prefix optional ones with `nit:`).
+
+Pushing new commits after an approval dismisses it, so the reviewer approves again.
+
+## 5. Merge
+
+Once approved (and, later, once CI is green), the author clicks **Squash and merge**. GitHub deletes the remote branch. Then update your machine:
+
+```bash
+git switch main
+git pull
+git branch -D feat/drop-pickup-window
+```
+
+`-D` is needed because a squash merge creates a new commit, so Git cannot tell that the local branch was merged and `-d` refuses to delete it.
+
+## When something goes wrong
+
+- **You committed to `main` by accident (not pushed).** Move the commits to a branch:
+  ```bash
+  git switch -c fix/my-change        # new branch keeps the commits
+  git branch -f main origin/main     # put local main back where GitHub's is
+  ```
+- **You pushed a secret.** Tell the other person and rotate the secret immediately. Removing the commit is not enough; assume it was copied.
+- **`main` is broken.** Fixing it comes before any other work. Revert the offending commit through a PR, then fix properly on a new branch.
+
+## Recording decisions
+
+When a change settles something important or hard to reverse, add a record to `docs/decisions/` in the same PR. See [the README there](../decisions/README.md).
