@@ -24,7 +24,7 @@ The goal is tooling that catches mistakes automatically and keeps both machines 
 
 ## Environment
 
-- [ ] **Docker Compose** for PostgreSQL + PostGIS (`postgis/postgis` image) and Redis. Same database version for both; nobody installs PostGIS by hand.
+- [x] **Docker Compose** for PostgreSQL + PostGIS (`postgis/postgis` image) and Redis. Same database version for both; nobody installs PostGIS by hand.
 - [ ] **Environment variables** via `django-environ`: commit a `.env.example`; never commit real `.env` files.
 
 ## Automation

@@ -21,13 +21,18 @@ git branch -D feat/drop-pickup-window
 
 ## Setting up a machine
 
-1. Install uv. On Windows: `winget install --id=astral-sh.uv -e`, then reopen the terminal and VS Code.
-2. Install the backend's dependencies:
+1. Install Docker Desktop and uv. On Windows: Docker Desktop from docker.com (it uses WSL2), and `winget install --id=astral-sh.uv -e`. Reopen the terminal and VS Code afterwards.
+2. Start the backend, its database and Redis, from the repository root:
+   ```bash
+   docker compose up --build
+   ```
+   The API is then at http://localhost:8000.
+3. Create the local environment the editor reads (it is never used to run the app):
    ```bash
    cd backend
    uv sync
    ```
-3. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
+4. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
 
 ## 1. Start from an issue and a fresh branch
 
@@ -65,11 +70,23 @@ git merge origin/main
 
 ### Dependencies
 
-- After pulling, run `uv sync` in `backend/` so your environment matches `uv.lock`.
-- Add packages with `uv add <package>` (or `uv add --dev <package>` for development-only tools). Never use `pip install`: it changes your environment without updating `pyproject.toml` or `uv.lock`, so nobody else gets the package.
+- After pulling, start with `docker compose up --build` so the image is rebuilt if `uv.lock` changed, and run `uv sync` in `backend/` so the editor's environment matches too.
+- Add packages with `uv add <package>` in `backend/` (or `uv add --dev <package>` for development-only tools), then rebuild with `docker compose up --build` so the container installs it. Never use `pip install`: it changes one environment without updating `pyproject.toml` or `uv.lock`, so nobody else gets the package.
 - Commit `pyproject.toml` and `uv.lock` together.
 - If `uv.lock` conflicts during a merge, resolve `pyproject.toml` by hand, then run `uv lock` to regenerate the lockfile. Never edit `uv.lock` by hand.
-- Run Django commands with `uv run python manage.py <command>`.
+- Run Django commands inside the container, from the repository root, while Compose is running: `docker compose exec backend python manage.py <command>`.
+
+### Docker Compose commands
+
+| Command | What it does |
+| --- | --- |
+| `docker compose up --build` | Build the backend image if needed and start everything, showing the logs |
+| `docker compose up -d` | Start everything in the background |
+| `docker compose logs -f backend` | Follow one service's logs |
+| `docker compose exec backend <command>` | Run a command in the running backend container |
+| `docker compose ps` | List the running services |
+| `docker compose down` | Stop and remove the containers. The database data is kept. |
+| `docker compose down -v` | Same, and delete the database data too |
 
 ## 3. Open the pull request
 

@@ -35,18 +35,20 @@ The codebase is meant to be production-ready from the start: the first release i
 | Mobile | Two Flutter apps (customer app and store app) sharing one backend and one database |
 | API contract | drf-spectacular generates an OpenAPI spec; the Dart client is generated from it. The API is versioned (`/api/v1/`) because old app versions stay installed. |
 | Background jobs | Needed for expiring reservations, closing drops, notifications, invoicing and payouts. Celery + Redis or a Postgres-based queue, not decided yet. |
-| Infrastructure (planned) | Docker containers on a managed platform, managed PostgreSQL with PostGIS, S3-compatible storage + CDN for images, Firebase Cloud Messaging for push, Sentry for errors. Separate dev, staging and prod environments. |
+| Runtime | Everything runs in Docker, in development and production. One backend image serves both the `web` and `worker` processes. Production starts on one Linux server running Docker Compose behind a reverse proxy, with PostgreSQL + PostGIS self-hosted until there is income. |
+| External services (planned) | S3-compatible storage + CDN for images and database backups, Firebase Cloud Messaging for push, Sentry for errors. Separate dev, staging and prod environments. |
 
 ### Repository layout
 
 ```
-.github/          GitHub configuration
-backend/          Django project (uv-managed; settings in backend/config/)
-frontend/         Flutter apps (customer and store)
-docs/decisions/   One file per important decision
-docs/handbook/    What tools exist (tooling.md) and how to make changes (workflow.md)
-docs/handoff/     This file
-docs/ideas/       Temporary notes and plans; files here come and go
+.github/            GitHub configuration
+docker-compose.yml  Development services: backend, PostGIS, Redis
+backend/            Django project (uv-managed; settings in backend/config/; Dockerfile)
+frontend/           Flutter apps (customer and store)
+docs/decisions/     One file per important decision
+docs/handbook/      What tools exist (tooling.md) and how to make changes (workflow.md)
+docs/handoff/       This file
+docs/ideas/         Temporary notes and plans; files here come and go
 ```
 
 The Flutter code lives in `frontend/`. Older notes say `/mobile`; that name is out of date. Common Dart code (generated API client, models, auth, theme) may later move to a shared package inside `frontend/`.
@@ -80,6 +82,13 @@ These are settled. Ask the team before deviating from any of them.
 - **Money** is stored as decimals, in GTQ.
 - **Time** is stored as `timestamptz` in UTC, with `USE_TZ = True`. Guatemala (`America/Guatemala`) has no daylight saving time.
 - **Statuses** are Django `TextChoices` backed by database check constraints.
+
+### Infrastructure
+
+- **The database starts self-hosted and moves to managed later.** The backend reads its database connection from the `DATABASE_URL` environment variable and must work unchanged in both setups. See [decision 0001](../decisions/0001-self-hosted-database-first.md).
+- **One backend image, official images for the rest.** `web` (Gunicorn + Django) and `worker` (background jobs) run the same image with different start commands. Production starts on one server running Docker Compose. See [decision 0002](../decisions/0002-runtime-structure.md).
+- **Portability rules:** configuration only from environment variables, nothing stored on a container's disk (uploads go to storage), no in-memory state between requests, logs to standard output. Every feature must follow them.
+- **Development runs fully in Docker Compose** (Django, PostGIS, Redis), from the same Dockerfile as production. A local `backend/.venv` exists only for the editor. See [decision 0003](../decisions/0003-development-in-docker.md).
 
 ### Process
 
@@ -117,8 +126,8 @@ Fields still to add to the draft:
 
 - Payment gateway
 - FEL invoicing provider (FEL is Guatemala's electronic invoicing system)
-- Hosting provider
-- How the backend runs in development: directly on Windows with the database in Docker, fully in Docker, or inside WSL2. GeoDjango needs the native GDAL, GEOS and PROJ libraries, which are awkward to install on Windows.
+- Hosting provider (for the first server)
+- Reverse proxy (Caddy or Nginx)
 - Background job queue (Celery + Redis or Postgres-based)
 - Whether store staff may buy packages from their own store
 

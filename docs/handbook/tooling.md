@@ -7,11 +7,12 @@ For how to actually make a change day to day, see [workflow.md](workflow.md).
 ## Repository layout
 
 ```
-.github/          GitHub configuration (PR template)
-backend/          Django project (uv-managed; settings in backend/config/)
-docs/decisions/   One file per important decision
-docs/handbook/    This file and workflow.md
-docs/ideas/       Temporary notes and plans; files here come and go
+.github/            GitHub configuration (PR template)
+docker-compose.yml  Development services: backend, PostGIS, Redis
+backend/            Django project (uv-managed; settings in backend/config/)
+docs/decisions/     One file per important decision
+docs/handbook/      This file and workflow.md
+docs/ideas/         Temporary notes and plans; files here come and go
 ```
 
 ## Git
@@ -81,9 +82,49 @@ There is no `requirements.txt`. It would be a second, unlocked list of the same 
 
 `uv run <command>` runs a command inside the environment, syncing it first if the lockfile changed, so there is no virtualenv to activate.
 
+The same lockfile is installed in two places: inside the backend image, which is what actually runs, and in `backend/.venv` on each machine, which only exists so the editor can resolve imports and offer autocomplete.
+
 ### Django project
 
 `backend/config/` holds the project-level code: settings, root URLs, and the ASGI/WSGI entry points that production servers load. It is called `config` rather than after the project so it is not confused with the feature apps that will sit next to it. `backend/manage.py` is the entry point for Django commands: `uv run python manage.py <command>`.
+
+## Docker
+
+Everything runs in containers, in development and production ([decision 0002](../decisions/0002-runtime-structure.md), [decision 0003](../decisions/0003-development-in-docker.md)).
+
+### `backend/Dockerfile`
+
+The recipe for the backend image, used by every backend process:
+
+1. Starts from the official `python:3.13-slim` image on Debian.
+2. Installs GDAL, GEOS and PROJ, the native libraries GeoDjango needs, from Debian's packages.
+3. Copies in the uv program and installs the dependencies with `uv sync --frozen`, which installs exactly what `uv.lock` says and fails if the lockfile is out of date.
+4. Copies in the code.
+
+The dependencies are installed before the code is copied. Docker caches each step, so changing code reuses the cached dependency layer, and only a change to `pyproject.toml` or `uv.lock` reinstalls packages.
+
+The image's virtual environment lives in `/opt/venv` (set by `UV_PROJECT_ENVIRONMENT`), outside `/app`. In development `backend/` is mounted over `/app`, and that folder contains each developer's own `.venv` for their operating system; keeping the image's environment elsewhere stops the mount from hiding it.
+
+`PYTHONUNBUFFERED=1` makes Python write logs immediately, so they appear in `docker compose logs` as they happen.
+
+### `backend/.dockerignore`
+
+Files left out when building the image: the local `.venv`, caches, `.env` files and the SQLite file. This keeps the image small and stops secrets from being baked into it.
+
+### `docker-compose.yml`
+
+Defines the development services and how they connect:
+
+| Service | Image | Purpose |
+| --- | --- | --- |
+| `backend` | Built from `backend/Dockerfile` | Django's development server on port 8000. `backend/` is mounted into the container, so code changes reload without rebuilding. |
+| `db` | `postgis/postgis:17-3.5` | PostgreSQL 17 with PostGIS 3.5, a version managed providers also offer ([decision 0001](../decisions/0001-self-hosted-database-first.md)). Data is kept in the `db-data` volume across restarts. |
+| `redis` | `redis:7-alpine` | Redis, for the background job queue and caching |
+
+- **Service names are hostnames.** Inside Compose's network, the backend reaches the database at `db:5432` and Redis at `redis:6379`.
+- **Ports are published on `127.0.0.1` only**, so database clients and the browser on your machine can connect, but nothing else on the network can.
+- **The database has a health check** (`pg_isready`), and the backend waits for it to pass before starting.
+- **The database credentials in this file are for development only.** They are not secret and are never used anywhere else.
 
 ## Decision records
 
