@@ -90,7 +90,13 @@ git merge origin/main
 
 ## 3. Open the pull request
 
-Push the branch and open a PR against `main`. Fill in the template:
+Push the branch and open a PR against `main`. The first push of a new branch has to create it on GitHub and link it to your local one; after that, a plain `git push` is enough:
+
+```bash
+git push -u origin feat/drop-pickup-window
+```
+
+Then fill in the template:
 
 - **Title:** this becomes the commit message on `main`, so write it as one: `Add pickup window validation to drops`. GitHub pre-fills it from the commit message or branch name; it can be edited any time before merging, and is shown once more for confirmation when you squash and merge.
 - **What and why:** include `Closes #12` so the issue closes on merge.
