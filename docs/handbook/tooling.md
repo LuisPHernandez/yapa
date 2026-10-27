@@ -8,6 +8,7 @@ For how to actually make a change day to day, see [workflow.md](workflow.md).
 
 ```
 .github/            GitHub configuration (PR template)
+.env.example        Every environment variable, with development values
 docker-compose.yml  Development services: backend, PostGIS, Redis
 backend/            Django project (uv-managed; settings in backend/config/)
 docs/decisions/     One file per important decision
@@ -122,9 +123,38 @@ Defines the development services and how they connect:
 | `redis` | `redis:7-alpine` | Redis, for the background job queue and caching |
 
 - **Service names are hostnames.** Inside Compose's network, the backend reaches the database at `db:5432` and Redis at `redis:6379`.
-- **Ports are published on `127.0.0.1` only**, so database clients and the browser on your machine can connect, but nothing else on the network can.
+- **Published ports** let tools on your machine reach the services: the API at `localhost:8000`, the database at `localhost:5444` (not 5432, to avoid clashing with a PostgreSQL installed on the machine), Redis at `localhost:6379`. Inside Compose the database is still on `db:5432`. They are published on all network interfaces, not only `127.0.0.1`, so the other developer can use your running backend over the same Wi-Fi. The flip side is that anyone on that network can reach them too, with the development credentials, so stop Compose on untrusted networks such as public Wi-Fi.
 - **The database has a health check** (`pg_isready`), and the backend waits for it to pass before starting.
-- **The database credentials in this file are for development only.** They are not secret and are never used anywhere else.
+- **Credentials come from `.env`.** The `db` service takes `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` from it, and the backend receives the whole file as its environment (`env_file`). See [Configuration](#configuration).
+
+## Configuration
+
+Everything that differs between machines or environments (secret key, debug mode, allowed hosts, database connection, later API keys) comes from environment variables, never from code ([decision 0002](../decisions/0002-runtime-structure.md)). The same image then runs in development, staging and production with different variables.
+
+### `.env` and `.env.example`
+
+- **`.env.example`** is committed. It lists every variable the project uses, with safe development values and a comment for each.
+- **`.env`** is each developer's own copy, created from the example. It is ignored by Git, so real secrets can never be committed by accident.
+- Both live at the repository root, where Docker Compose reads `.env` automatically.
+
+In production there is no `.env` file in the repository; the server or platform sets the variables.
+
+### django-environ
+
+`settings.py` reads the variables through `django-environ`, which converts the text values into the types Django needs:
+
+| Variable | Read as | Example |
+| --- | --- | --- |
+| `DJANGO_SECRET_KEY` | Required string; Django refuses to start without it | |
+| `DJANGO_DEBUG` | Boolean, `False` if missing | `True` |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated list | `localhost,127.0.0.1,192.168.1.20` |
+| `DATABASE_URL` | Parsed into Django's `DATABASES` setting | `postgis://yapa:yapa@db:5432/yapa` |
+
+Defaults are the safe production value (`DEBUG` off, no allowed hosts), so a missing variable makes production stricter, never more open. Settings without a safe default, such as the secret key, have no default and stop Django at startup.
+
+`settings.py` does not read the `.env` file itself; Compose passes it in as real environment variables. That keeps one mechanism everywhere: Django only ever reads its environment.
+
+The `postgis://` scheme selects GeoDjango's PostGIS database backend. The PostgreSQL driver is `psycopg`.
 
 ## Decision records
 

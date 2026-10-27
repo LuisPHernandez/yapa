@@ -1,6 +1,7 @@
 services:
   backend:
     build: ./backend
+    env_file: .env
     ports:
       - "8000:8000"
     volumes:
@@ -14,15 +15,15 @@ services:
   db:
     image: postgis/postgis:17-3.5
     environment:
-      POSTGRES_DB: yapa
-      POSTGRES_USER: yapa
-      POSTGRES_PASSWORD: yapa
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5444:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yapa -d yapa"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10

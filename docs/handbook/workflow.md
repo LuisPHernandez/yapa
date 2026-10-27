@@ -22,17 +22,22 @@ git branch -D feat/drop-pickup-window
 ## Setting up a machine
 
 1. Install Docker Desktop and uv. On Windows: Docker Desktop from docker.com (it uses WSL2), and `winget install --id=astral-sh.uv -e`. Reopen the terminal and VS Code afterwards.
-2. Start the backend, its database and Redis, from the repository root:
+2. Create your `.env` from the example, at the repository root:
+   ```bash
+   cp .env.example .env
+   ```
+   To let the other developer reach your backend over Wi-Fi, add your machine's network IP to `DJANGO_ALLOWED_HOSTS`.
+3. Start the backend, its database and Redis, from the repository root:
    ```bash
    docker compose up --build
    ```
    The API is then at http://localhost:8000.
-3. Create the local environment the editor reads (it is never used to run the app):
+4. Create the local environment the editor reads (it is never used to run the app):
    ```bash
    cd backend
    uv sync
    ```
-4. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
+5. In VS Code, with the Python extension installed: Ctrl+Shift+P → **Python: Select Interpreter** → **Enter interpreter path...** → **Find...** → `backend\.venv\Scripts\python.exe` (`backend/.venv/bin/python` on macOS or Linux). VS Code only lists virtual environments at the root of the opened folder automatically, so this one has to be picked by path. The choice is saved for this folder only.
 
 ## 1. Start from an issue and a fresh branch
 
@@ -74,6 +79,7 @@ git merge origin/main
 - Add packages with `uv add <package>` in `backend/` (or `uv add --dev <package>` for development-only tools), then rebuild with `docker compose up --build` so the container installs it. Never use `pip install`: it changes one environment without updating `pyproject.toml` or `uv.lock`, so nobody else gets the package.
 - Commit `pyproject.toml` and `uv.lock` together.
 - If `uv.lock` conflicts during a merge, resolve `pyproject.toml` by hand, then run `uv lock` to regenerate the lockfile. Never edit `uv.lock` by hand.
+- A new environment variable goes into `.env.example` in the same PR, with a comment. Tell the other developer to add it to their `.env`, since Git never updates that file.
 - Run Django commands inside the container, from the repository root, while Compose is running: `docker compose exec backend python manage.py <command>`.
 
 ### Docker Compose commands

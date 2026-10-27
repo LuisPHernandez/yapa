@@ -42,6 +42,7 @@ The codebase is meant to be production-ready from the start: the first release i
 
 ```
 .github/            GitHub configuration
+.env.example        Every environment variable, with development values
 docker-compose.yml  Development services: backend, PostGIS, Redis
 backend/            Django project (uv-managed; settings in backend/config/; Dockerfile)
 frontend/           Flutter apps (customer and store)
@@ -87,7 +88,7 @@ These are settled. Ask the team before deviating from any of them.
 
 - **The database starts self-hosted and moves to managed later.** The backend reads its database connection from the `DATABASE_URL` environment variable and must work unchanged in both setups. See [decision 0001](../decisions/0001-self-hosted-database-first.md).
 - **One backend image, official images for the rest.** `web` (Gunicorn + Django) and `worker` (background jobs) run the same image with different start commands. Production starts on one server running Docker Compose. See [decision 0002](../decisions/0002-runtime-structure.md).
-- **Portability rules:** configuration only from environment variables, nothing stored on a container's disk (uploads go to storage), no in-memory state between requests, logs to standard output. Every feature must follow them.
+- **Portability rules:** configuration only from environment variables (read with `django-environ`; each developer's `.env` is copied from `.env.example`), nothing stored on a container's disk (uploads go to storage), no in-memory state between requests, logs to standard output. Every feature must follow them.
 - **Development runs fully in Docker Compose** (Django, PostGIS, Redis), from the same Dockerfile as production. A local `backend/.venv` exists only for the editor. See [decision 0003](../decisions/0003-development-in-docker.md).
 
 ### Process
